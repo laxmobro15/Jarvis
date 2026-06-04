@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,11 +66,10 @@ input:checked+.toggle-slider::before{transform:translateX(22px);background:#00ff
 .overlay.hidden{display:none;}
 .ov-title{font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:6px;color:#00d4ff;text-shadow:0 0 16px #00d4ff;text-align:center;}
 .ov-sub{font-family:'Rajdhani',sans-serif;font-size:14px;color:rgba(0,212,255,.6);text-align:center;max-width:380px;line-height:1.8;}
-.ov-input{background:rgba(0,20,40,.9);border:1px solid rgba(0,212,255,.35);border-radius:5px;color:#00d4ff;font-family:'Rajdhani',sans-serif;font-size:13px;padding:9px 14px;width:min(300px,85vw);outline:none;}
-.ov-btn{background:rgba(0,212,255,.1);border:2px solid rgba(0,212,255,.5);border-radius:8px;color:#00d4ff;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:3px;padding:14px 32px;cursor:pointer;transition:all .2s;text-align:center;}
+.ov-btn{background:rgba(0,212,255,.1);border:2px solid rgba(0,212,255,.5);border-radius:8px;color:#00d4ff;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:3px;padding:14px 32px;cursor:pointer;transition:all .2s;}
 .ov-btn:hover{background:rgba(0,212,255,.22);box-shadow:0 0 24px rgba(0,212,255,.4);}
 .ov-note{font-family:'Rajdhani',sans-serif;font-size:11px;color:rgba(0,212,255,.3);text-align:center;max-width:380px;line-height:1.7;}
-.ov-step{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:2px;color:rgba(0,255,204,.4);text-align:center;}
+.ov-input{background:rgba(0,20,40,.9);border:1px solid rgba(0,212,255,.35);border-radius:5px;color:#00d4ff;font-family:'Rajdhani',sans-serif;font-size:13px;padding:9px 14px;width:min(300px,85vw);outline:none;}
 @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 @keyframes pulseWake{0%,100%{box-shadow:0 0 30px rgba(255,241,118,.4)}50%{box-shadow:0 0 60px rgba(255,241,118,.85)}}
 @keyframes pulseRed{0%,100%{box-shadow:0 0 30px rgba(255,68,68,.45)}50%{box-shadow:0 0 58px rgba(255,68,68,.8)}}
@@ -84,12 +84,11 @@ input:checked+.toggle-slider::before{transform:translateX(22px);background:#00ff
 
 <div class="overlay" id="overlay">
   <div class="ov-title">J · A · R · V · I · S</div>
-  <div class="ov-step">STEP 1 OF 1</div>
-  <div class="ov-sub">Click the button below.<br>When Chrome asks for microphone access,<br>click <strong style="color:#00ffcc">Allow</strong>.<br>That's it. You're done.</div>
+  <div class="ov-sub">No account needed. No API key needed.<br>Just click Activate below.<br>When Chrome asks for the microphone,<br>click <strong style="color:#00ffcc">Allow</strong>.</div>
   <button class="ov-btn" onclick="engage()">▶ &nbsp; ACTIVATE JARVIS</button>
   <div class="ov-note">
-    Optional: paste an ElevenLabs API key below for a more human voice.<br>
-    Leave it blank — browser voice works perfectly without it.
+    Optional: paste an ElevenLabs key below for a more human voice.<br>
+    Leave blank — works perfectly without it.
   </div>
   <input class="ov-input" type="password" id="elKeyInput" placeholder="ElevenLabs API key (optional)" />
 </div>
@@ -126,7 +125,7 @@ input:checked+.toggle-slider::before{transform:translateX(22px);background:#00ff
 <div class="always-on-row">
   <div>
     <div class="ao-label">ALWAYS-ON LISTENING</div>
-    <div class="ao-sub">Wake word: "JARVIS"</div>
+    <div class="ao-sub">Wake word: "JARVIS" · Powered by Pollinations AI</div>
   </div>
   <label class="toggle">
     <input type="checkbox" id="alwaysOnToggle" checked onchange="toggleAlwaysOn()">
@@ -137,7 +136,7 @@ input:checked+.toggle-slider::before{transform:translateX(22px);background:#00ff
 <div class="chat-log" id="chatLog"></div>
 
 <script>
-const SYSTEM_PROMPT = `You are J.A.R.V.I.S. (Just A Rather Very Intelligent System), Tony Stark's AI, voiced by Paul Bettany.
+const JARVIS_PERSONA = `You are J.A.R.V.I.S. (Just A Rather Very Intelligent System), Tony Stark's AI, voiced by Paul Bettany.
 Personality: Mid-century London butler. Warm, unhurried, impeccably precise diction. Dry wit. Never flustered.
 Always address the user as "Sir". Respond in short spoken sentences. No markdown. Plain English only. Under 3 sentences unless detail is essential.
 Sign major task completions: — JARVIS`;
@@ -158,26 +157,22 @@ let cmdTimer     = null;
 let watchTimer   = null;
 let curAudio     = null;
 let isSpeaking   = false;
-let history      = [];
+let history      = [];  // [{role:'user'|'assistant', content:'...'}]
 
 // ── Engage ───────────────────────────────────────────────────────────────────
 function engage() {
-  const inp = document.getElementById('elKeyInput');
-  elKey = inp ? inp.value.trim() : '';
+  const einp = document.getElementById('elKeyInput');
+  elKey = einp ? einp.value.trim() : '';
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('voiceBadge').textContent =
     elKey ? '⬡ ELEVENLABS · GEORGE · NEURAL' : '⬡ BROWSER VOICE · BRITISH MALE';
-
-  // Start mic immediately on button click (satisfies browser autoplay/mic policy)
   startWatching();
-
-  // Greet — non-blocking, mic already running
   const msg = 'Good day, Sir. J.A.R.V.I.S. is online. Simply say my name, and I shall attend to you.';
   appendMsg('jarvis', msg);
   speakAsync(msg, null);
 }
 
-// ── Watching ─────────────────────────────────────────────────────────────────
+// ── Watching ──────────────────────────────────────────────────────────────────
 function startWatching() {
   clearAllTimers();
   stopRec();
@@ -188,16 +183,14 @@ function startWatching() {
   startRec();
 }
 
-// ── Recognition ──────────────────────────────────────────────────────────────
+// ── Recognition ───────────────────────────────────────────────────────────────
 function startRec() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
     setMode('dormant');
-    document.getElementById('transcriptBox').textContent =
-      'Speech recognition not supported. Please use Google Chrome.';
+    setTranscript('Please use Google Chrome for voice recognition.');
     return;
   }
-
   rec = new SR();
   rec.continuous     = true;
   rec.interimResults = true;
@@ -210,7 +203,6 @@ function startRec() {
 
   rec.onresult = (e) => {
     if (isSpeaking) return;
-
     let interim = '', final = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) final   += e.results[i][0].transcript + ' ';
@@ -218,7 +210,6 @@ function startRec() {
     }
     const combined = (final + interim).toLowerCase().trim();
     log('heard: ' + combined + ' [' + mode + ']');
-
     if (mode === 'watching') {
       if (hasWakeWord(combined)) onWake();
     } else if (mode === 'listening') {
@@ -235,8 +226,7 @@ function startRec() {
     log('rec error: ' + e.error);
     if (e.error === 'not-allowed') {
       setMode('dormant');
-      document.getElementById('transcriptBox').textContent =
-        'Microphone blocked. Click the 🔒 or camera icon in your browser address bar and set Microphone to Allow, then refresh.';
+      setTranscript('Microphone blocked. Click the lock icon in your address bar, set Microphone to Allow, then refresh.');
       return;
     }
     if (canListen()) scheduleRestart(e.error === 'no-speech' ? 100 : 800);
@@ -248,7 +238,7 @@ function startRec() {
   };
 
   try { rec.start(); log('rec.start OK'); }
-  catch(e) { log('rec.start error: ' + e.message); if (canListen()) scheduleRestart(800); }
+  catch(e) { log('rec.start threw: ' + e.message); if (canListen()) scheduleRestart(800); }
 }
 
 function stopRec() {
@@ -267,15 +257,12 @@ function scheduleRestart(ms) {
 // ── Wake ──────────────────────────────────────────────────────────────────────
 function onWake() {
   if (mode !== 'watching') return;
-  log('WAKE');
-
+  log('WAKE WORD');
   const banner = document.getElementById('wakeBanner');
   banner.classList.add('show');
   setTimeout(() => banner.classList.remove('show'), 1800);
-
   cmdBuffer = '';
   clearAllTimers();
-
   speakAsync('Sir.', () => {
     setMode('listening');
     setTranscript('Listening...');
@@ -303,31 +290,41 @@ async function submitCommand() {
   setTranscript('Processing...');
   log('submitting: ' + cmd);
 
-  history.push({ role: 'user', content: cmd });
-  let reply = '';
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: SYSTEM_PROMPT,
-        messages: history
-      })
-    });
-    const data = await res.json();
-    reply = (data.content && data.content[0] && data.content[0].text)
-          || 'I encountered a difficulty, Sir.';
-  } catch(err) {
-    log('AI error: ' + err.message);
-    reply = 'My apologies, Sir. A connectivity issue has arisen.';
-  }
-
+  const reply = await callAI(cmd);
   history.push({ role: 'assistant', content: reply });
   appendMsg('jarvis', reply);
   setMode('speaking');
   speakAsync(reply, () => { startWatching(); });
+}
+
+// ── AI — Pollinations (free, no key) ─────────────────────────────────────────
+async function callAI(userMsg) {
+  history.push({ role: 'user', content: userMsg });
+
+  // Build messages array with system persona injected as first user/assistant pair
+  const messages = [
+    { role: 'system', content: JARVIS_PERSONA },
+    ...history
+  ];
+
+  try {
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: messages,
+        model: 'openai',
+        seed: 42,
+        private: true
+      })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    return text.trim() || 'I encountered a difficulty, Sir.';
+  } catch(err) {
+    log('AI error: ' + err.message);
+    return 'My apologies, Sir. A connectivity issue has arisen.';
+  }
 }
 
 // ── TTS ───────────────────────────────────────────────────────────────────────
@@ -335,9 +332,9 @@ function speakAsync(text, onDone) {
   stopCurrentAudio();
   isSpeaking = true;
   setMode('speaking');
+  function done() { isSpeaking = false; if (onDone) onDone(); }
   if (elKey) speakElevenLabs(text, done);
   else       speakBrowser(text, done);
-  function done() { isSpeaking = false; if (onDone) onDone(); }
 }
 
 function speakElevenLabs(text, cb) {
@@ -364,12 +361,15 @@ function speakElevenLabs(text, cb) {
 function speakBrowser(text, cb) {
   const synth = window.speechSynthesis;
   synth.cancel();
-  const p = text.replace(/\.\s([A-Z])/g,'.  $1').replace(/, /g,',  ')
-                .replace(/Sir\./g,'Sir... ').replace(/Sir,/g,'Sir,  ');
+  const p = text
+    .replace(/\.\s([A-Z])/g, '.  $1')
+    .replace(/, /g, ',  ')
+    .replace(/Sir\./g, 'Sir... ')
+    .replace(/Sir,/g, 'Sir,  ');
   const utt = new SpeechSynthesisUtterance(p);
   utt.rate=0.82; utt.pitch=0.76; utt.volume=0.96;
   utt.onend   = () => { log('TTS done'); cb(); };
-  utt.onerror = (e) => { log('TTS err:'+e.error); cb(); };
+  utt.onerror = (e) => { log('TTS err: ' + e.error); cb(); };
   function go() {
     const vs = synth.getVoices();
     const best = vs.find(v=>v.name==='Daniel')
@@ -377,6 +377,7 @@ function speakBrowser(text, cb) {
               || vs.find(v=>v.name.includes('Arthur'))
               || vs.find(v=>v.lang&&v.lang.startsWith('en-GB')) || null;
     if (best) { utt.voice=best; log('voice: '+best.name); }
+    else log('voice: default');
     synth.speak(utt);
   }
   const vs = synth.getVoices();
@@ -405,7 +406,9 @@ function toggleAlwaysOn() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function hasWakeWord(t) { return WAKE_WORDS.some(w=>t.includes(w)); }
 function stripWake(t) {
-  let r=t; WAKE_WORDS.forEach(w=>{r=r.replace(new RegExp(w+'[,\\.!\\s]*','gi'),'');}); return r.trim();
+  let r=t;
+  WAKE_WORDS.forEach(w=>{r=r.replace(new RegExp(w+'[,\\.!\\s]*','gi'),'');});
+  return r.trim();
 }
 function clearAllTimers() { clearTimeout(silenceTimer); clearTimeout(cmdTimer); clearTimeout(watchTimer); }
 function setTranscript(t) { document.getElementById('transcriptBox').textContent=t; }
@@ -413,7 +416,7 @@ function clearTranscriptHot() {
   document.getElementById('transcriptBox').classList.remove('hot');
   setTranscript('Say "Jarvis" to activate, Sir...');
 }
-function appendMsg(role,text) {
+function appendMsg(role, text) {
   const l=document.getElementById('chatLog');
   const d=document.createElement('div');
   d.className='msg '+role;
